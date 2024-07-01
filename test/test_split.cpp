@@ -1,11 +1,9 @@
 //
-// Created by Yanliang Li on 6/21/24.
+// Created by Yanliang Li on 7/1/24.
 //
-#include "../data_split/DataSplit.h"
+#include "../data_split/DataSpliter.h"
 #include "../utils/DataReader.h"
 #include <vtkm/Types.h>
-#include <vtkm/cont/DataSet.h>
-#include <vtkm/cont/DataSetBuilderUniform.h>
 #include <vtkm/cont/ColorTable.h>
 
 #include <vtkm/filter/contour/ContourFlyingEdges.h>
@@ -14,42 +12,25 @@
 #include <vtkm/rendering/Scene.h>
 #include <vtkm/rendering/CanvasRayTracer.h>
 #include <vtkm/rendering/View3D.h>
-//#include <vtkm/rendering/MapperVolume.h>
 #include <vtkm/rendering/MapperRayTracer.h>
 
-int main(int argc, char *argv[]) {
-    std::string file_path = "../data/stagbeetle832x832x494.dat";
-    size_t numElementsToSkip = 3;
-    std::vector<vtkm::Int16> data = readDatFile<vtkm::Int16>(file_path, numElementsToSkip);
+#include <vtkm/cont/cuda/DeviceAdapterCuda.h>
+#include <vtkm/cont/Initialize.h>
 
-    // I don't know why it fails when I was using vtkm::Int16 to render the figure directly.
-    // But anyway it works with float
-    // transform data type to float
-    std::vector<float> dataFloat(data.begin(), data.end());
-
-    vtkm::cont::DataSet inputDataSet;
-    vtkm::cont::DataSetBuilderUniform dataSetBuilder;
-
-    vtkm::Id3 pointDimensions(832, 832, 494);
-    vtkm::Id3 origin(0, 0, 0);
-    vtkm::Id3 spacing(1, 1, 1);
-
-    inputDataSet = dataSetBuilder.Create(pointDimensions);
-    inputDataSet.AddPointField("data", dataFloat);
-
+void renderDataSet(const vtkm::cont::DataSet& dataSet, const std::string& outputFileName) {
     vtkm::filter::contour::ContourFlyingEdges filter;
     vtkm::Float32 isovalue = 100;
     filter.SetIsoValue(isovalue);
     filter.SetActiveField("data");
-    vtkm::cont::DataSet outputDataSet = filter.Execute(inputDataSet);
+    vtkm::cont::DataSet outputDataSet = filter.Execute(dataSet);
 
     // Set up a camera for rendering the input data
     vtkm::rendering::Camera camera;
-    camera.SetLookAt(vtkm::Vec3f_32(415.5f, 415.5f, 247.0f)); // set look origin at dataset center
-    camera.SetViewUp(vtkm::make_Vec(0.f, 1.f, 0.f)); // view straight up
-    camera.SetClippingRange(1.f, 1000.f); // set slice range
-    camera.SetFieldOfView(60.f); // set view direction
-    camera.SetPosition(vtkm::Vec3f_32(415.5f, 415.5f, 1000.0f)); // camera position
+    camera.SetLookAt(vtkm::Vec3f_32(256, 256, 256));
+    camera.SetViewUp(vtkm::make_Vec(0.f, 1.f, 0.f));
+    camera.SetClippingRange(1.f, 1000.f);
+    camera.SetFieldOfView(60.f);
+    camera.SetPosition(vtkm::Vec3f_32(1.5, 1.5, 1.5));
     vtkm::cont::ColorTable colorTable("inferno");
 
     // Background color:
@@ -61,11 +42,29 @@ int main(int argc, char *argv[]) {
     vtkm::rendering::Scene scene;
     scene.AddActor(actor);
 
-    vtkm::rendering::CanvasRayTracer canvas(20480,20480);
+    vtkm::rendering::CanvasRayTracer canvas(2048, 2048);
     vtkm::rendering::View3D view(scene, vtkm::rendering::MapperRayTracer(), canvas, camera, bg);
     view.Paint();
-    view.SaveAs("beetle.png");
+    view.SaveAs(outputFileName);
+}
+
+int main(int argc, char *argv[]) {
+    vtkm::cont::InitializeOptions options = vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
+    vtkm::cont::Initialize(argc, argv, options);
+
+    std::string file_path = "../data/stagbeetle832x832x494.dat";
+    size_t numElementsToSkip = 3;
+    std::vector<vtkm::Int16> data = readDatFile<vtkm::Int16>(file_path, numElementsToSkip);
+
+    vtkm::Id3 dataDimensions(832, 832, 494);
+    vtkm::Id3 blockDimensions(256, 256, 256);
+
+    std::vector<vtkm::cont::DataSet> dataSets = splitDataSet(data, dataDimensions, blockDimensions);
+
+    for (size_t i = 0; i < dataSets.size(); ++i) {
+        std::string outputFileName = "beetle_block_" + std::to_string(i) + ".png";
+        renderDataSet(dataSets[i], outputFileName);
+    }
 
     return 0;
 }
-
