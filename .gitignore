@@ -4,7 +4,8 @@ cmake-build-debug/
 CMakeCache.txt
 Makefile
 cmake_install.cmake
-build/
+/build/*
+!/build/
 
 # IDE files
 .vscode/
@@ -15,7 +16,8 @@ build/
 *.sln.docstates
 
 # test data
-data/
+/data/*
+!/data/
 
 # Prerequisites
 *.d
