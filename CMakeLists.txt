@@ -3,9 +3,11 @@ project(VTK_split LANGUAGES CXX CUDA)
 
 find_package(VTKm REQUIRED)
 find_package(CUDA REQUIRED)
+find_package(ZFP REQUIRED)
 
 include_directories(${VTKm_INCLUDE_DIRS})
 include_directories(${CUDA_INCLUDE_DIRS})
+include_directories(${ZFP_INCLUDE_DIRS})
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CUDA_STANDARD 11)
@@ -34,7 +36,12 @@ set(SOURCES main.cpp)
 #set_property(TARGET testSplit PROPERTY CUDA_ARCHITECTURES 80)
 #target_link_libraries(testSplit vtkm::filter vtkm::cont vtkm::rendering vtkm::io vtkm::source ${CUDA_LIBRARIES})
 
-cuda_add_executable(testExtractor test/test_extractor.cu)
-set_target_properties(testExtractor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_property(TARGET testExtractor PROPERTY CUDA_ARCHITECTURES 80)
-target_link_libraries(testExtractor vtkm::filter vtkm::cont vtkm::rendering vtkm::io vtkm::source ${CUDA_LIBRARIES})
+#cuda_add_executable(testExtractor test/test_extractor.cu)
+#set_target_properties(testExtractor PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+#set_property(TARGET testExtractor PROPERTY CUDA_ARCHITECTURES 80)
+#target_link_libraries(testExtractor vtkm::filter vtkm::cont vtkm::rendering vtkm::io vtkm::source ${CUDA_LIBRARIES})
+
+cuda_add_executable(testCompressionZFP test/test_compression_zfp.cpp)
+set_target_properties(testCompressionZFP PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_property(TARGET testCompressionZFP PROPERTY CUDA_ARCHITECTURES 80)
+target_link_libraries(testCompressionZFP vtkm::filter vtkm::cont vtkm::rendering vtkm::io vtkm::source ${CUDA_LIBRARIES} ${ZFP_LIBRARIES})
