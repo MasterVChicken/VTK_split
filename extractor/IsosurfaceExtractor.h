@@ -27,7 +27,7 @@ processIsovalues(const std::vector<vtkm::cont::DataSet> &dataSets, const std::ve
             filter.SetActiveField("data");
             auto outputDataSet = filter.Execute(dataSets[i]);
 
-            if (!outputDataSet.GetCellSet().GetNumberOfCells() > 0) {
+            if (outputDataSet.GetCellSet().GetNumberOfCells() > 0) {
                 result.blockIds.push_back(i);
             }
         }

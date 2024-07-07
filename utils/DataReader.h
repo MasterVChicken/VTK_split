@@ -9,6 +9,7 @@
 #include <vector>
 #include <stdexcept>
 
+// Data reader designed for .dat file to skip metadata
 template <typename T>
 std::vector<T> readDatFile(const std::string& filename, size_t numElementsToSkip = 3) {
     std::ifstream file(filename, std::ios::binary);
@@ -18,14 +19,14 @@ std::vector<T> readDatFile(const std::string& filename, size_t numElementsToSkip
 
     // get file size
     file.seekg(0, std::ios::end);
-    size_t fileSize = file.tellg();
+    std::size_t fileSize = file.tellg();
 
     // skip some metadata, for the dataset 'stagbeetle832x832x494.dat', the metadata size is 3
     size_t headerSize = numElementsToSkip * sizeof(T);
 
     file.seekg(headerSize, std::ios::beg);
 
-    size_t dataSize = (fileSize - headerSize) / sizeof(T);
+    std::size_t dataSize = (fileSize - headerSize) / sizeof(T);
     std::vector<T> data(dataSize);
 
     // read data
@@ -36,6 +37,32 @@ std::vector<T> readDatFile(const std::string& filename, size_t numElementsToSkip
     }
 
     file.close();
+    return data;
+}
+
+// Data reader for dataset without header
+template <typename T>
+std::vector<T> readF32File(const std::string& filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        throw std::runtime_error("Unable to open file: " + filename);
+    }
+
+    // get file size
+    file.seekg(0, std::ios::end);
+    std::size_t fileSize = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    std::size_t dataSize = fileSize / sizeof(T);
+    std::vector<T> data(dataSize);
+
+    // read data
+    file.read(reinterpret_cast<char*>(data.data()), fileSize);
+
+    if (!file) {
+        throw std::runtime_error("Error reading file: " + filename);
+    }
+
     return data;
 }
 

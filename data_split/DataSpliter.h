@@ -58,6 +58,21 @@ std::vector<vtkm::cont::DataSet> splitDataSet(const std::vector<T>& data,
     return dataSets;
 }
 
+template <typename T>
+vtkm::Range calculateDataRange(const std::vector<T>& data) {
+    auto result = std::minmax_element(data.begin(), data.end());
+    return vtkm::Range(*result.first, *result.second);
+}
+
+template <typename T>
+std::vector<T> generateIsovalues(const vtkm::Range& dataRange, int numIsovalues) {
+    std::vector<T> isovalues;
+    T step = static_cast<T>((dataRange.Max - dataRange.Min) / (numIsovalues + 1));
+    for (int i = 1; i <= numIsovalues; ++i) {
+        isovalues.push_back(static_cast<T>(dataRange.Min + i * step));
+    }
+    return isovalues;
+}
 
 
 #endif //VTK_TRY_DATASPLIT_H
