@@ -11,7 +11,6 @@
 
 int main(int argc, char* argv[]) {
 
-    double error_bound = 0.01;
     vtkm::cont::InitializeOptions options = vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
@@ -36,14 +35,14 @@ int main(int argc, char* argv[]) {
     std::vector<IsoSurfaceResult> results = processIsovalues(dataSets, isovalues);
 
     // Perform compression
-    double tolerance = 1e-3;
+    double errorBound = 1e-2;
     for (const auto& result : results) {
         for (auto blockId : result.blockIds) {
             auto& dataSet = dataSets[blockId];
             std::vector<vtkm::Float32> blockData;
             dataSet.GetField("data").GetData().CopyTo(blockData);
 
-            CompressionResult zfpCompressed = compressDataWithZFP(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], tolerance);
+            CompressionResult zfpCompressed = compressDataWithZFP(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], errorBound);
 
             std::cout << "Block ID: " << blockId << ", Isovalue: " << result.isovalue << std::endl;
             std::cout << "ZFP Compressed Size: " << zfpCompressed.compressedData.size() << " bytes" << std::endl;

@@ -7,33 +7,45 @@
 #include "../extractor/IsosurfaceExtractor.h"
 #include <vtkm/cont/Initialize.h>
 #include <iostream>
+#include "../compress/Compressor.h"
 
 int main(int argc, char* argv[]) {
 
-    double error_bound = 0.01;
     vtkm::cont::InitializeOptions options = vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
-    std::string file_path = "../data/stagbeetle832x832x494.dat";
-    size_t numElementsToSkip = 3;
-    std::vector<vtkm::Int16> data = readDatFile<vtkm::Int16>(file_path, numElementsToSkip);
+    std::string filePath = "../data/stagbeetle832x832x494.dat";
+    size_t numElements = 512 * 512 * 512;  // 512x512x512 3D 数据
+    std::vector<vtkm::Float32> data = readF32File(filePath, numElements);
 
-    vtkm::Id3 dataDimensions(832, 832, 494);
-    vtkm::Id3 blockDimensions(256, 256, 256);
+    // get data range
+    vtkm::Range dataRange = calculateDataRange(data);
+    std::cout << "Data range: [" << dataRange.Min << ", " << dataRange.Max << "]" << std::endl;
 
+    // generate 2 iso-values: 1/3 and 2/3
+    std::vector<vtkm::Float32> isovalues = {
+            static_cast<vtkm::Float32>(dataRange.Min + (dataRange.Max - dataRange.Min) / 3),
+            static_cast<vtkm::Float32>(dataRange.Min + 2 * (dataRange.Max - dataRange.Min) / 3)
+    };
+
+    vtkm::Id3 dataDimensions(512, 512, 512);
+    vtkm::Id3 blockDimensions(128, 128, 128);
     std::vector<vtkm::cont::DataSet> dataSets = splitDataSet(data, dataDimensions, blockDimensions);
-
-    std::vector<vtkm::Float32> isovalues = {50.0f, 100.0f, 150.0f};
 
     std::vector<IsoSurfaceResult> results = processIsovalues(dataSets, isovalues);
 
+    // Perform compression
+    double errorBound = 1e-2;
     for (const auto& result : results) {
-        std::cout << "Isovalue: " << result.isovalue << "\nBlocks: ";
         for (auto blockId : result.blockIds) {
-            std::cout << blockId << " ";
-        }
-        std::cout << std::endl;
-    }
+            auto& dataSet = dataSets[blockId];
+            std::vector<vtkm::Float32> blockData;
+            dataSet.GetField("data").GetData().CopyTo(blockData);
 
-    return 0;
+            CompressionResult szCompressed = compressDataWithSZ(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], errorBound);
+
+            std::cout << "Block ID: " << blockId << ", Isovalue: " << result.isovalue << std::endl;
+            std::cout << "SZ Compressed Size: " << szCompressed.compressedData.size() << " bytes" << std::endl;
+        }
+    }
 }
