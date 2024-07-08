@@ -36,3 +36,8 @@ Here is the to-do list:
 1. Try different data set like NYX(from https://sdrbench.github.io)
 2. Add compression on return part
 3. Add support on 3 different compressors: MGARD(https://github.com/CODARcode/MGARD.git), ZFP(https://github.com/LLNL/zfp.git), SZ(https://github.com/szcompressor/SZ.git)
+
+When building ZFP with CUDA support, don't forget to enable OpenMP by
+```console
+cmake .. -DZFP_WITH_CUDA=ON -DZFP_WITH_OPENMP=OFF
+```

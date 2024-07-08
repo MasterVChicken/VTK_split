@@ -7,66 +7,46 @@
 #include "../extractor/IsosurfaceExtractor.h"
 #include <vtkm/cont/Initialize.h>
 #include <iostream>
-#include <zfp.h>
-
-// Compress with ZFP
-std::vector<uint8_t> compressDataWithZFP(const std::vector<float>& data, size_t nx, size_t ny, size_t nz, double tolerance) {
-    zfp_type type = zfp_type_float;
-    zfp_field* field = zfp_field_3d(const_cast<float*>(data.data()), type, nx, ny, nz);
-
-    // set parameter
-    zfp_stream* zfp = zfp_stream_open(nullptr);
-    zfp_stream_set_accuracy(zfp, tolerance);
-
-    size_t bufsize = zfp_stream_maximum_size(zfp, field);
-    std::vector<uint8_t> buffer(bufsize);
-
-    bitstream* stream = stream_open(buffer.data(), bufsize);
-    zfp_stream_set_bit_stream(zfp, stream);
-    zfp_stream_rewind(zfp);
-
-    size_t compressedSize = zfp_compress(zfp, field);
-    if (compressedSize == 0) {
-        std::cerr << "Compression failed!" << std::endl;
-    }
-
-    zfp_field_free(field);
-    zfp_stream_close(zfp);
-    stream_close(stream);
-
-    buffer.resize(compressedSize);
-    return buffer;
-}
+#include "../compress/Compressor.h"
 
 int main(int argc, char* argv[]) {
 
-    double tolerance = 0.01;
+    double error_bound = 0.01;
     vtkm::cont::InitializeOptions options = vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
-    std::string file_path = "../data/stagbeetle832x832x494.dat";
-    std::vector<vtkm::Float32> data = readF32File<vtkm::Float32>(file_path);
+    std::string filePath = "../data/stagbeetle832x832x494.dat";
+    size_t numElements = 512 * 512 * 512;  // 512x512x512 3D 数据
+    std::vector<vtkm::Float32> data = readF32File(filePath, numElements);
+
+    // get data range
+    vtkm::Range dataRange = calculateDataRange(data);
+    std::cout << "Data range: [" << dataRange.Min << ", " << dataRange.Max << "]" << std::endl;
+
+    // generate 2 iso-values: 1/3 and 2/3
+    std::vector<vtkm::Float32> isovalues = {
+            static_cast<vtkm::Float32>(dataRange.Min + (dataRange.Max - dataRange.Min) / 3),
+            static_cast<vtkm::Float32>(dataRange.Min + 2 * (dataRange.Max - dataRange.Min) / 3)
+    };
 
     vtkm::Id3 dataDimensions(512, 512, 512);
-    vtkm::Id3 blockDimensions(64, 64, 64);
-
-    //Get data range and generate meaningful iso-value
-    vtkm::Range dataRange = calculateDataRange<vtkm::Float32>(data);
-
-    int numIsovalues = 10;
-    std::vector<vtkm::Float32> isovalues = generateIsovalues<vtkm::Float32>(dataRange, numIsovalues);
-
+    vtkm::Id3 blockDimensions(128, 128, 128);
     std::vector<vtkm::cont::DataSet> dataSets = splitDataSet(data, dataDimensions, blockDimensions);
 
     std::vector<IsoSurfaceResult> results = processIsovalues(dataSets, isovalues);
 
+    // Perform compression
+    double tolerance = 1e-3;
     for (const auto& result : results) {
-        std::cout << "Isovalue: " << result.isovalue << "\nBlocks: ";
         for (auto blockId : result.blockIds) {
-            std::cout << blockId << " ";
-        }
-        std::cout << std::endl;
-    }
+            auto& dataSet = dataSets[blockId];
+            std::vector<vtkm::Float32> blockData;
+            dataSet.GetField("data").GetData().CopyTo(blockData);
 
-    return 0;
+            CompressionResult zfpCompressed = compressDataWithZFP(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], tolerance);
+
+            std::cout << "Block ID: " << blockId << ", Isovalue: " << result.isovalue << std::endl;
+            std::cout << "ZFP Compressed Size: " << zfpCompressed.compressedData.size() << " bytes" << std::endl;
+        }
+    }
 }
