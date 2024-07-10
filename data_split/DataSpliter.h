@@ -12,6 +12,9 @@
 #include <vector>
 #include <vtkm/cont/DataSet.h>
 #include <vtkm/cont/DataSetBuilderUniform.h>
+#include <vtkm/cont/ArrayHandle.h>
+#include <vtkm/cont/ArrayCopy.h>
+#include <vtkm/cont/Field.h>
 
 template <typename T>
 std::vector<vtkm::cont::DataSet> splitDataSet(const std::vector<T>& data,

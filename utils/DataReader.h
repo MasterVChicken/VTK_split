@@ -40,9 +40,9 @@ std::vector<T> readDatFile(const std::string& filename, size_t numElementsToSkip
     return data;
 }
 
-// Data reader for dataset without header
+// Without header
 template <typename T>
-std::vector<T> readF32File(const std::string& filename) {
+std::vector<T> readF32File(const std::string& filename, std::size_t numElements) {
     std::ifstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         throw std::runtime_error("Unable to open file: " + filename);
@@ -53,11 +53,12 @@ std::vector<T> readF32File(const std::string& filename) {
     std::size_t fileSize = file.tellg();
     file.seekg(0, std::ios::beg);
 
-    std::size_t dataSize = fileSize / sizeof(T);
+    // calculate the number of elements to read
+    std::size_t dataSize = std::min(fileSize / sizeof(T), numElements);
     std::vector<T> data(dataSize);
 
     // read data
-    file.read(reinterpret_cast<char*>(data.data()), fileSize);
+    file.read(reinterpret_cast<char*>(data.data()), dataSize * sizeof(T));
 
     if (!file) {
         throw std::runtime_error("Error reading file: " + filename);
