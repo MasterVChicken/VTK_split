@@ -22,11 +22,6 @@ int main(int argc, char* argv[]) {
     vtkm::Range dataRange = calculateDataRange(data);
     std::cout << "Data range: [" << dataRange.Min << ", " << dataRange.Max << "]" << std::endl;
 
-    // generate 2 iso-values: 1/3 and 2/3
-    // std::vector<vtkm::Float32> isovalues = {
-    //         static_cast<vtkm::Float32>(dataRange.Min + (dataRange.Max - dataRange.Min) / 3),
-    //         static_cast<vtkm::Float32>(dataRange.Min + 2 * (dataRange.Max - dataRange.Min) / 3)
-    // };
     std::vector<vtkm::Float32> isovalues = generateIsovalues<vtkm::Float32>(dataRange, 8);
 
     vtkm::Id3 dataDimensions(512, 512, 512);

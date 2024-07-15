@@ -2,6 +2,7 @@
 // Created by Yanliang Li on 7/7/24.
 //
 
+#pragma once
 #include "../data_split/DataSpliter.h"
 #include "../utils/DataReader.h"
 #include "../extractor/IsosurfaceExtractor.h"

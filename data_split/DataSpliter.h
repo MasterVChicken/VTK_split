@@ -5,8 +5,8 @@
 #ifndef VTK_TRY_DATASPLIT_H
 #define VTK_TRY_DATASPLIT_H
 
+#pragma once
 #include <iostream>
-#include <vector>
 #include <stdexcept>
 
 #include <vector>

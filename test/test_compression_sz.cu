@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
                 blockData[i] = portal.Get(i);
             }
 
-            CompressionResult szCompressed = compressDataWithSZ(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], errorBound);
+            CompressionResult szCompressed = compressDataWithSZ3(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], errorBound);
 
             std::cout << "Block ID: " << blockId << ", Isovalue: " << result.isovalue << std::endl;
             std::cout << "SZ Compressed Size: " << szCompressed.compressedData.size() << " bytes" << std::endl;
