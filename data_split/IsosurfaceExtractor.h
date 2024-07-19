@@ -5,8 +5,10 @@
 #ifndef VTK_TRY_ISOSURFACEEXTRACTOR_H
 #define VTK_TRY_ISOSURFACEEXTRACTOR_H
 
+#pragma once
 #include <vtkm/filter/contour/ContourFlyingEdges.h>
 #include <vtkm/cont/DataSet.h>
+#include <vtkm/cont/DataSetBuilderUniform.h>
 
 struct IsoSurfaceResult {
     vtkm::Float32 isovalue;

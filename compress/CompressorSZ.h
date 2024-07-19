@@ -2,8 +2,8 @@
 // Created by Yanliang Li on 7/8/24.
 //
 
-#ifndef VTK_TRY_COMPRESSORCUSZ_H
-#define VTK_TRY_COMPRESSORCUSZ_H
+#ifndef VTK_TRY_COMPRESSORSZ_H
+#define VTK_TRY_COMPRESSORSZ_H
 
 #pragma once
 #include <SZ3/api/sz.hpp>
@@ -36,4 +36,4 @@ CompressionResult compressDataWithSZ3(const std::vector<float>& data, size_t nx,
     return result;
 }
 
-#endif // VTK_TRY_COMPRESSORCUSZ_H
+#endif // VTK_TRY_COMPRESSORSZ_H

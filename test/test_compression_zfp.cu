@@ -2,9 +2,8 @@
 // Created by Yanliang Li on 7/7/24.
 //
 
-#include "../data_split/DataSpliter.h"
 #include "../utils/DataReader.h"
-#include "../extractor/IsosurfaceExtractor.h"
+#include "../data_split/DataMerge.h"
 #include <vtkm/cont/Initialize.h>
 #include <iostream>
 #include "../compress/CompressorZFP.h"
@@ -18,37 +17,36 @@ int main(int argc, char* argv[]) {
     size_t numElements = 512 * 512 * 512;  // 512x512x512 3D 数据
     std::vector<vtkm::Float32> data = readF32File<vtkm::Float32>(filePath, numElements);
 
-    // get data range
-    vtkm::Range dataRange = calculateDataRange(data);
-    std::cout << "Data range: [" << dataRange.Min << ", " << dataRange.Max << "]" << std::endl;
-
-    std::vector<vtkm::Float32> isovalues = generateIsovalues<vtkm::Float32>(dataRange, 8);
-
     vtkm::Id3 dataDimensions(512, 512, 512);
-    vtkm::Id3 blockDimensions(128, 128, 128);
-    std::vector<vtkm::cont::DataSet> dataSets = splitDataSet(data, dataDimensions, blockDimensions);
+    vtkm::Id3 blockDimensions(32, 32, 32);
+    int numIsovalues = 5;
 
-    std::vector<IsoSurfaceResult> results = processIsovalues(dataSets, isovalues);
+    try {
+        auto mergedBlocks = findAndMergeIsosurfaceBlocks(data, dataDimensions, blockDimensions, numIsovalues);
 
-    // Perform compression
-    double errorBound = 1e-2;
-    for (const auto& result : results) {
-        for (auto blockId : result.blockIds) {
-            auto& dataSet = dataSets[blockId];
+        std::cout << "Merged block positions, sizes, and dimensions: " << std::endl;
+        for (const auto& block : mergedBlocks) {
+            const auto& mergedData = std::get<0>(block);
+            const auto& position = std::get<1>(block);
+            const auto& dimensions = std::get<2>(block);
+            std::cout << "Position: (" << position[0] << ", " << position[1] << ", " << position[2] << "), Size: " << mergedData.size() << ", Dimensions: (" << dimensions[0] << ", " << dimensions[1] << ", " << dimensions[2] << ")" << std::endl;
+        }
 
-            vtkm::cont::ArrayHandle<vtkm::Float32> dataArray;
-            vtkm::cont::ArrayCopy(dataSet.GetField("data").GetData().AsArrayHandle<vtkm::cont::ArrayHandle<vtkm::Float32>>(), dataArray);
+        // Perform compression
+        double errorBound = 1e-2;
+        for (const auto& block : mergedBlocks) {
+            const auto& mergedData = std::get<0>(block);
+            const auto& position = std::get<1>(block);
+            const auto& dimensions = std::get<2>(block);
 
-            std::vector<vtkm::Float32> blockData(dataArray.GetNumberOfValues());
-            auto portal = dataArray.ReadPortal();
-            for (vtkm::Id i = 0; i < dataArray.GetNumberOfValues(); ++i) {
-                blockData[i] = portal.Get(i);
-            }
+            std::cout << "Compressing block at position: (" << position[0] << ", " << position[1] << ", " << position[2] << "), Size: " << mergedData.size() << ", Dimensions: (" << dimensions[0] << ", " << dimensions[1] << ", " << dimensions[2] << ")" << std::endl;
+            CompressionResult zfpCompressed = compressDataWithZFP(mergedData, dimensions[0], dimensions[1], dimensions[2], errorBound);
 
-            CompressionResult zfpCompressed = compressDataWithZFP(blockData, blockDimensions[0], blockDimensions[1], blockDimensions[2], errorBound);
-
-            std::cout << "Block ID: " << blockId << ", Isovalue: " << result.isovalue << std::endl;
             std::cout << "ZFP Compressed Size: " << zfpCompressed.compressedData.size() << " bytes" << std::endl;
         }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
     }
+
+    return 0;
 }
