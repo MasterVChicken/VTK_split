@@ -86,23 +86,24 @@ int maxCuboid(std::vector<std::vector<std::vector<int>>>& matrix, int R, int C, 
 
 template <typename T>
 std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> mergeIsosurfaceBlocks(
-    const std::vector<T>& data,
-    const std::vector<std::tuple<std::vector<T>, vtkm::Id3>>& blocksWithPosition,
-    const vtkm::Id3& dataDimensions, const vtkm::Id3& blockDimensions)
+        const std::vector<T>& data,
+        const std::vector<std::tuple<std::vector<T>, vtkm::Id3>>& blocksWithPosition,
+        const vtkm::Id3& dataDimensions, const vtkm::Id3& blockDimensions)
 {
     if (blockDimensions[0] == 0 || blockDimensions[1] == 0 || blockDimensions[2] == 0) {
         throw std::invalid_argument("blockDimensions must be non-zero");
     }
 
     vtkm::Id3 numBlocks(
-        (dataDimensions[0] + blockDimensions[0] - 1) / blockDimensions[0],
-        (dataDimensions[1] + blockDimensions[1] - 1) / blockDimensions[1],
-        (dataDimensions[2] + blockDimensions[2] - 1) / blockDimensions[2]);
+            (dataDimensions[0] + blockDimensions[0] - 1) / blockDimensions[0],
+            (dataDimensions[1] + blockDimensions[1] - 1) / blockDimensions[1],
+            (dataDimensions[2] + blockDimensions[2] - 1) / blockDimensions[2]);
 
     std::vector<std::vector<std::vector<int>>> matrix(
-        numBlocks[0],
-        std::vector<std::vector<int>>(numBlocks[1], std::vector<int>(numBlocks[2], 0)));
+            numBlocks[0],
+            std::vector<std::vector<int>>(numBlocks[1], std::vector<int>(numBlocks[2], 0)));
 
+    // Initialize pos matrix
     for (const auto& blockWithPosition : blocksWithPosition) {
         const auto& position = std::get<1>(blockWithPosition);
         vtkm::Id x = position[0] / blockDimensions[0];
@@ -117,6 +118,7 @@ std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> mergeIsosurfaceBlo
         matrix[x][y][z] = 1;
     }
 
+    // Prepare return data type: vector consists of tuples, which consist of data, position and dimension
     std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> mergedBlocks;
 
     while (true) {

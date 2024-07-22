@@ -138,7 +138,7 @@ std::vector<std::tuple<std::vector<T>, vtkm::Id3>> findIsosurfaceBlocks(const st
                                                                         const vtkm::Id3& dataDimensions,
                                                                         const vtkm::Id3& blockDimensions,
                                                                         int numIsovalues) {
-    auto blocksWithPosition = splitDataSet(data, dataDimensions, blockDimensions);
+    auto blocksWithPosition = splitDataSet<T>(data, dataDimensions, blockDimensions);
     std::vector<vtkm::cont::DataSet> dataSets;
 
     for (const auto& blockWithPosition : blocksWithPosition) {

@@ -9,6 +9,7 @@
 #include <vtkm/filter/contour/ContourFlyingEdges.h>
 #include <vtkm/cont/DataSet.h>
 #include <vtkm/cont/DataSetBuilderUniform.h>
+#include <chrono>
 
 struct IsoSurfaceResult {
     vtkm::Float32 isovalue;
@@ -18,6 +19,7 @@ struct IsoSurfaceResult {
 std::vector<IsoSurfaceResult>
 processIsovalues(const std::vector<vtkm::cont::DataSet> &dataSets, const std::vector<vtkm::Float32> &isovalues) {
     std::vector<IsoSurfaceResult> results;
+    auto start = std::chrono::high_resolution_clock::now();
 
     for (auto isovalue: isovalues) {
         IsoSurfaceResult result;
@@ -36,6 +38,9 @@ processIsovalues(const std::vector<vtkm::cont::DataSet> &dataSets, const std::ve
 
         results.push_back(result);
     }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> totalTime = end - start;
+    std::cout << "Total Isosurface Extraction Time: " << totalTime.count() << " seconds" << std::endl;
 
     return results;
 }
