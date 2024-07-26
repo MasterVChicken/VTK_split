@@ -5,51 +5,6 @@
 #ifndef VTK_TRY_COMPRESSORMGARD_H
 #define VTK_TRY_COMPRESSORMGARD_H
 
-// #pragma once
-// #include "mgard/compress_x.hpp"
-// #include <iostream>
-// #include <vector>
-// #include <cstring> // for std::memcpy
-// #include "cuda_runtime.h"
-
-// struct CompressionResult {
-//     std::vector<uint8_t> compressedData;
-// };
-
-// CompressionResult compressDataWithMGARDX(const std::vector<float>& data, size_t nx, size_t ny, size_t nz, double errorBound, double s = 0) {
-//     // Define MGARD configuration
-//     mgard_x::Config config;
-//     config.lossless = mgard_x::lossless_type::Huffman;
-//     config.dev_type = mgard_x::device_type::SERIAL;
-
-//     std::vector<mgard_x::SIZE> shape{nx, ny, nz};
-
-//     // Prepare input data
-//     float* in_array_cpu = const_cast<float*>(data.data());
-
-//     // Prepare output data
-//     void* compressed_array_cpu = nullptr;
-//     size_t compressed_size;
-
-//     // Perform compression
-//     mgard_x::compress(3, mgard_x::data_type::Float, shape, errorBound, s,
-//                       mgard_x::error_bound_type::REL, in_array_cpu,
-//                       compressed_array_cpu, compressed_size, config, false);
-
-//     // Copy compressed data to std::vector
-//     std::vector<uint8_t> compressedVec(compressed_size);
-//     std::memcpy(compressedVec.data(), compressed_array_cpu, compressed_size);
-
-//     // Clean up
-//     cudaFree(compressed_array_cpu);
-
-//     CompressionResult result;
-//     result.compressedData = compressedVec;
-//     return result;
-// }
-
-#ifndef VTK_TRY_COMPRESSORMGARDX_H
-#define VTK_TRY_COMPRESSORMGARDX_H
 
 #include <vector>
 #include <string>
@@ -78,7 +33,7 @@ CompressionResult compressDataWithMGARDX(const std::vector<float>& data, int dim
     // 调用 MGARD-X 压缩命令
     std::string command = "/home/exouser/MGARD/install-cuda-ampere/bin/mgard-x -z -i " + inputFilePath + " -c " + outputFilePath + " -t s -n 3 " 
                         + std::to_string(dimX) + " " + std::to_string(dimY) + " " + std::to_string(dimZ) 
-                        + " -m rel -e " + std::to_string(relativeErrorBound)+ " -s 0 -r 1 -d serial -l 0";
+                        + " -m rel -e " + std::to_string(relativeErrorBound)+ " -s infinity -r 1 -d serial -l 0 - v3";
     
     auto start = std::chrono::high_resolution_clock::now();
     int result = std::system(command.c_str());
@@ -133,8 +88,6 @@ std::vector<float> decompressDataWithMGARDX(const std::vector<char>& compressedD
 
     return decompressedData;
 }
-
-#endif //VTK_TRY_COMPRESSORMGARDX_H
 
 
 #endif // VTK_TRY_COMPRESSORMGARD_H

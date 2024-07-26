@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <vtkm/cont/Initialize.h>
-#include "../compress/CompressorZFP.h"
+#include "../compress/CompressorSZ.h"
 #include "../utils/DataReader.h"
 #include "../data_split/DataMerge.h"
 
@@ -9,12 +9,12 @@ int main(int argc, char *argv[]) {
     vtkm::cont::InitializeOptions options = vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
-    std::string filePath = "../data/100x500x500/Pf48.bin.f32";
-    size_t numElements = 500 * 500 * 100;
+    std::string filePath = "../data/SDRBENCH-SCALE_98x1200x1200/QS-98x1200x1200.f32";
+    size_t numElements = 1200 * 1200 * 98;
     std::vector<vtkm::Float32> data = readF32File<vtkm::Float32>(filePath, numElements);
 
-    vtkm::Id3 dataDimensions(500, 500, 100);
-    vtkm::Id3 blockDimensions(64, 64, 64);
+    vtkm::Id3 dataDimensions(1200, 1200, 98);
+    vtkm::Id3 blockDimensions(32, 32, 32);
     int numIsovalues = 5;
 
     try {
@@ -46,17 +46,17 @@ int main(int argc, char *argv[]) {
             std::cout << "Merged data size: " << mergedData.size() << std::endl;
 
             try {
-                CompressionResult zfpCompressed = compressDataWithZFP(mergedData, dimensions[0], dimensions[1], dimensions[2], errorBound);
+                CompressionResult szCompressed = compressDataWithSZ(mergedData, dimensions[0], dimensions[1], dimensions[2], errorBound);
 
-                totalCompressionTime += zfpCompressed.compressionTime;
-                totalCompressedSize += zfpCompressed.compressedSize;
+                totalCompressionTime += szCompressed.compressionTime;
+                totalCompressedSize += szCompressed.compressedSize;
                 totalOriginalSize += mergedData.size() * sizeof(vtkm::Float32);
 
-                std::cout << "Compression time: " << zfpCompressed.compressionTime << " seconds" << std::endl;
-                std::cout << "Compressed data size: " << zfpCompressed.compressedSize << std::endl;
+                std::cout << "Compression time: " << szCompressed.compressionTime << " seconds" << std::endl;
+                std::cout << "Compressed data size: " << szCompressed.compressedSize << std::endl;
 
                 auto start = std::chrono::high_resolution_clock::now();
-                std::vector<vtkm::Float32> decompressedData = decompressDataWithZFP(zfpCompressed.compressedData, dimensions[0], dimensions[1], dimensions[2]);
+                std::vector<vtkm::Float32> decompressedData = decompressDataWithSZ(szCompressed.compressedData, dimensions[0], dimensions[1], dimensions[2]);
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> decompressionTime = end - start;
 

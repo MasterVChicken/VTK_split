@@ -11,12 +11,12 @@ int main(int argc, char *argv[]) {
             vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
-    std::string filePath = "../data/SDRBENCH-SCALE_98x1200x1200/QS-98x1200x1200.f32";
-    size_t numElements = 1200 * 1200 * 98;    
+    std::string filePath = "../data/100x500x500/Pf48.bin.f32";
+    size_t numElements = 500 * 500 * 100;
     std::vector<vtkm::Float32> data = readF32File<vtkm::Float32>(filePath, numElements);
 
-    vtkm::Id3 dataDimensions(1200, 1200, 98);
-    vtkm::Id3 blockDimensions(32, 32, 32);
+    vtkm::Id3 dataDimensions(500, 500, 100);
+    vtkm::Id3 blockDimensions(16, 16, 16);
     int numIsovalues = 5;
 
     try {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         }
 
         // Perform compression
-        double relativeErrorBound = 1e-6;
+        double relativeErrorBound = 1e-2;
         double totalCompressionTime = 0;
         double totalDecompressionTime = 0;
         double totalCompressedSize = 0;

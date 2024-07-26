@@ -12,19 +12,27 @@ int main(int argc, char *argv[]) {
             vtkm::cont::InitializeOptions::RequireDevice | vtkm::cont::InitializeOptions::AddHelp;
     vtkm::cont::Initialize(argc, argv, options);
 
-
-    std::string filePath = "../data/SDRBENCH-SCALE_98x1200x1200/QS-98x1200x1200.f32";
-    size_t numElements = 1200 * 1200 * 98;
+    // std::string filePath = "../data/100x500x500/Pf48.bin.f32";
+    std::string filePath = "../data/SDRBENCH-EXASKY-NYX-512x512x512/temperature.f32";
+    size_t numElements = 512 * 512 * 512;
     std::vector<vtkm::Float32> data = readF32File<vtkm::Float32>(filePath, numElements);
 
-    vtkm::Id3 dataDimensions(1200, 1200, 98);
-    vtkm::Id3 blockDimensions(32, 32, 32);
+    vtkm::Id3 dataDimensions(500, 500, 100);
+    vtkm::Id3 blockDimensions(16, 16, 16);
     int numIsovalues = 5;
 
     try {
         auto mergedBlocks = findAndMergeIsosurfaceBlocks<vtkm::Float32>(data, dataDimensions, blockDimensions, numIsovalues);
+
+        std::cout << "Merged block positions, sizes, and dimensions: " << std::endl;
+        for (const auto &block: mergedBlocks) {
+            const auto &mergedData = std::get<0>(block);
+            const auto &position = std::get<1>(block);
+            const auto &dimensions = std::get<2>(block);
+        }
+
         
-        double errorBound = 5e-1;
+        double errorBound = 4e-4;
         std::string s = "infinity"; // Setting s to infinity for L-infinity norm
         double totalCompressionTime = 0;
         double totalDecompressionTime = 0;

@@ -136,15 +136,40 @@ std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> mergeIsosurfaceBlo
         vtkm::Id3 mergePosition = {sx * blockDimensions[0], sy * blockDimensions[1], sz * blockDimensions[2]};
         vtkm::Id3 mergedDimensions = {(ex - sx + 1) * blockDimensions[0], (ey - sy + 1) * blockDimensions[1], (ez - sz + 1) * blockDimensions[2]};
 
+        // Ensure the merged block dimensions do not exceed the data dimensions
+        if (mergePosition[0] + mergedDimensions[0] > dataDimensions[0]) {
+            mergedDimensions[0] = dataDimensions[0] - mergePosition[0];
+        }
+        if (mergePosition[1] + mergedDimensions[1] > dataDimensions[1]) {
+            mergedDimensions[1] = dataDimensions[1] - mergePosition[1];
+        }
+        if (mergePosition[2] + mergedDimensions[2] > dataDimensions[2]) {
+            mergedDimensions[2] = dataDimensions[2] - mergePosition[2];
+        }
+
+        std::cerr << "Merging block from position (" << mergePosition[0] << ", " << mergePosition[1] << ", " << mergePosition[2]
+                  << ") with dimensions (" << mergedDimensions[0] << ", " << mergedDimensions[1] << ", " << mergedDimensions[2] << ")" << std::endl;
+
         for (int x = sx; x <= ex; ++x) {
             for (int y = sy; y <= ey; ++y) {
                 for (int z = sz; z <= ez; ++z) {
-                    for (int bx = 0; bx < blockDimensions[0]; ++bx) {
-                        for (int by = 0; by < blockDimensions[1]; ++by) {
-                            for (int bz = 0; bz < blockDimensions[2]; ++bz) {
-                                int global_x = x * blockDimensions[0] + bx;
-                                int global_y = y * blockDimensions[1] + by;
-                                int global_z = z * blockDimensions[2] + bz;
+                    vtkm::Id3 blockSize = blockDimensions;
+                    if ((x == ex) && (x * blockDimensions[0] + blockDimensions[0] > dataDimensions[0])) {
+                        blockSize[0] = dataDimensions[0] - x * blockDimensions[0];
+                    }
+                    if ((y == ey) && (y * blockDimensions[1] + blockDimensions[1] > dataDimensions[1])) {
+                        blockSize[1] = dataDimensions[1] - y * blockDimensions[1];
+                    }
+                    if ((z == ez) && (z * blockDimensions[2] + blockDimensions[2] > dataDimensions[2])) {
+                        blockSize[2] = dataDimensions[2] - z * blockDimensions[2];
+                    }
+
+                    for (int bx = 0; bx < blockSize[0]; ++bx) {
+                        for (int by = 0; by < blockSize[1]; ++by) {
+                            for (int bz = 0; bz < blockSize[2]; ++bz) {
+                                int global_x = x * blockSize[0] + bx;
+                                int global_y = y * blockSize[1] + by;
+                                int global_z = z * blockSize[2] + bz;
                                 if (global_x < dataDimensions[0] && global_y < dataDimensions[1] && global_z < dataDimensions[2]) {
                                     vtkm::Id globalIndex = (global_z * dataDimensions[1] + global_y) * dataDimensions[0] + global_x;
                                     mergedData.push_back(data[globalIndex]);
@@ -163,6 +188,7 @@ std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> mergeIsosurfaceBlo
     return mergedBlocks;
 }
 
+
 template <typename T>
 std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> findAndMergeIsosurfaceBlocks(const std::vector<T>& data,
                                                                                            const vtkm::Id3& dataDimensions,
@@ -172,5 +198,34 @@ std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> findAndMergeIsosur
     auto blocksWithPosition = findIsosurfaceBlocks<T>(data, dataDimensions, blockDimensions, numIsovalues);
     return mergeIsosurfaceBlocks<T>(data, blocksWithPosition, dataDimensions, blockDimensions);
 }
+
+// template <typename T>
+// std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> findAndMergeIsosurfaceBlocks(const std::vector<T>& data,
+//                                                                                            const vtkm::Id3& dataDimensions,
+//                                                                                            const vtkm::Id3& blockDimensions,
+//                                                                                            int numIsovalues)
+// {
+//     auto blocksWithPosition = findIsosurfaceBlocks<T>(data, dataDimensions, blockDimensions, numIsovalues);
+//     std::vector<std::tuple<std::vector<T>, vtkm::Id3, vtkm::Id3>> modified_result;
+
+//     for (const auto& blockWithPosition : blocksWithPosition)
+//     {
+//         const auto& position = std::get<1>(blockWithPosition);
+//         vtkm::Id3 adjustedBlockDimensions = blockDimensions;
+
+//         // Adjust block dimensions at the boundaries
+//         for (int i = 0; i < 3; ++i)
+//         {
+//             if (position[i] + blockDimensions[i] > dataDimensions[i])
+//             {
+//                 adjustedBlockDimensions[i] = dataDimensions[i] - position[i];
+//             }
+//         }
+
+//         modified_result.emplace_back(std::get<0>(blockWithPosition), position, adjustedBlockDimensions);
+//     }
+
+//     return modified_result;
+// }
 
 #endif //VTK_TRY_DATAMERGE_H
